@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+SQLAlchemy
+psycopg[binary]
+pgvector
+
+
+# Dev tools
+black
+isort
+ruff
+mypy

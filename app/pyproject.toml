@@ -1,0 +1,33 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+  \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+src_paths = ["app", "tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+src = ["app", "tests"]
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+pretty = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+strict_optional = true
+explicit_package_bases = true
