@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 
 from app.core.config import settings
-from pgvector.psycopg2 import register_vector
+from pgvector.psycopg2 import register_vector # type: ignore[import-untyped]
 
 
 # SQLAlchemy engine: single, shared connection factory

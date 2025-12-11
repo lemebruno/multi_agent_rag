@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from pgvector.sqlalchemy import VECTOR
+from pgvector.sqlalchemy import VECTOR # type: ignore[import-untyped]
 
 
 class Base(DeclarativeBase):

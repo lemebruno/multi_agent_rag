@@ -5,7 +5,8 @@ class Settings(BaseSettings):
     """
     Application settings loaded from environment variables and .env file.
     """
-
+    project_name: str = "Multi-Agent RAG"
+    api_prefix: str = "/api"
     app_name: str = "Multi-Agent RAG System"
     debug: bool = False
 
