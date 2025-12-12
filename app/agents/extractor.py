@@ -4,32 +4,34 @@ from typing import Any, Dict, Mapping, Type
 
 from pydantic import BaseModel
 
-from app.core.contracts import StructuredQuotation
+from app.core.schemas import QuotationUploadRequest, StructuredQuotation
 
 
 class ExtractorAgent:
     """
-    Simple heuristic extractor that always returns a StructuredQuotation.
+    Heuristic extractor that always returns a StructuredQuotation.
 
-    This initial version does not call an LLM yet. It inspects the
+    This initial version does not call an LLM. It inspects the
     StructuredQuotation schema and builds a payload with safe default
-    values, using the incoming raw_text where it makes sense.
+    values, using fields from the incoming upload request whenever
+    possible (raw_text, supplier, filename, metadata, etc.).
+
+    Later we can replace the internal logic with an LLM-powered
+    implementation without changing the public interface.
     """
 
-    def extract(self, raw_text: str) -> StructuredQuotation:
+    def extract(self, upload_request: QuotationUploadRequest) -> StructuredQuotation:
         """
-        Extract a StructuredQuotation from a raw text.
+        Extract a StructuredQuotation from a QuotationUploadRequest.
 
-        For now this is a heuristic, schema-driven implementation that:
-        - inspects the StructuredQuotation Pydantic model;
-        - fills reasonable defaults for each field;
-        - uses the raw_text in fields that look like the main text field.
-
-        Later we can replace the internal logic with an LLM-powered
-        implementation without changing the public interface.
+        The returned object is deterministic and schema-driven, so it
+        is suitable for tests and local development.
         """
         model_cls = self._get_model_class()
-        payload = self._build_payload_for_model(model_cls=model_cls, raw_text=raw_text)
+        payload = self._build_payload_for_model(
+            model_cls=model_cls,
+            upload=upload_request,
+        )
         return model_cls(**payload)
 
     @staticmethod
@@ -51,12 +53,18 @@ class ExtractorAgent:
     def _build_payload_for_model(
         cls,
         model_cls: Type[BaseModel],
-        raw_text: str,
+        upload: QuotationUploadRequest,
     ) -> Dict[str, Any]:
         """
-        Build a payload for a Pydantic model using the given raw_text.
+        Build a payload for a Pydantic model using the given upload request.
 
         Supports both Pydantic v1 (__fields__) and v2 (model_fields).
+        The mapping is heuristic:
+        - raw_text-like fields get upload.raw_text
+        - supplier-like fields get upload.supplier
+        - filename gets upload.filename
+        - metadata gets upload.metadata
+        - other fields receive type-based defaults
         """
         field_defs: Mapping[str, Any]
 
@@ -77,14 +85,23 @@ class ExtractorAgent:
             # Pydantic v2: field.annotation
             # Pydantic v1: field.outer_type_
             annotation = getattr(field, "annotation", None) or getattr(
-                field, "outer_type_", None
+                field,
+                "outer_type_",
+                None,
             )
 
             value: Any
 
-            # Prefer to use raw_text in obviously text-related fields
+            # Prefer to use upload fields when names are obviously related
             if name in {"raw_text", "text", "content", "body"}:
-                value = raw_text
+                value = upload.raw_text
+            elif name in {"supplier", "supplier_name", "vendor", "vendor_name"}:
+                value = upload.supplier
+            elif name == "filename":
+                value = upload.filename
+            elif name == "metadata":
+                value = upload.metadata
+            # Type-based fallbacks
             elif annotation is str:
                 value = ""
             elif annotation is int:
@@ -96,7 +113,7 @@ class ExtractorAgent:
             elif annotation in (list, tuple, set):
                 value = []
             else:
-                # Fallback: we do not know the best value, keep it None
+                # Unknown or complex type: keep None so Pydantic can handle
                 value = None
 
             payload[name] = value
