@@ -1,4 +1,4 @@
-from app.api.routes import health
+from app.api.routes import health, upload
 from app.core.config import settings
 from fastapi import FastAPI
 
@@ -15,6 +15,7 @@ def create_app() -> FastAPI:
 
     # Include routers
     app.include_router(health.router, prefix=settings.api_prefix)
+    app.include_router(upload.router, prefix=settings.api_prefix)
 
     return app
 
