@@ -22,18 +22,26 @@ def _clear_demo_data(db: Session) -> None:
     This keeps the script idempotent so it can be run multiple times
     without polluting the main tables with duplicated test data.
     """
-    # First delete embeddings linked to our demo quotations
+    quotation_rows = (
+        db.query(Quotation.id)
+        .filter(Quotation.supplier == DEMO_SUPPLIER)
+        .all()
+    )
+
+    quotation_ids = [row[0] for row in quotation_rows]
+
+    if not quotation_ids:
+        return
+
     (
         db.query(QuotationEmbedding)
-        .join(Quotation, QuotationEmbedding.quotation_id == Quotation.id)
-        .filter(Quotation.supplier == DEMO_SUPPLIER)
+        .filter(QuotationEmbedding.quotation_id.in_(quotation_ids))
         .delete(synchronize_session=False)
     )
 
-    # Then delete the quotations themselves
     (
         db.query(Quotation)
-        .filter(Quotation.supplier == DEMO_SUPPLIER)
+        .filter(Quotation.id.in_(quotation_ids))
         .delete(synchronize_session=False)
     )
 
