@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Sequence
+from typing import Sequence
 
 from sqlalchemy.orm import Session
 
@@ -36,7 +36,7 @@ class RetrieverAgent(RetrieverAgentProtocol):
         Currently this method:
         - uses query.query as the text to embed,
         - uses query.top_k as the maximum number of results,
-        - ignores query.filters (reserved for future extensions).
+        - optionally filters by supplier via query.filters["supplier"].
         """
         query_text = query.query.strip()
         if not query_text:
@@ -45,10 +45,19 @@ class RetrieverAgent(RetrieverAgentProtocol):
         embedding_vector = embed_text(query_text)
         top_k = query.top_k
 
+        supplier_filter = None
+        if query.filters:
+            raw_supplier = query.filters.get("supplier")
+            if isinstance(raw_supplier, str):
+                cleaned = raw_supplier.strip()
+                if cleaned:
+                    supplier_filter = cleaned
+
         quotations = get_similar_quotations(
             db=self._db,
             embedding=embedding_vector,
             limit=top_k,
+            supplier=supplier_filter,
         )
 
         return [StructuredQuotation.from_orm(q) for q in quotations]

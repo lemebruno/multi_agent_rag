@@ -134,7 +134,8 @@ def _run_single_query(db: Session, query_text: str, top_k: int = 3) -> None:
     request = QueryRequest(
         query=query_text,
         top_k=top_k,
-        filters={},
+        # Limit retrieval to demo quotations so the output is easier to inspect.
+        filters={"supplier": DEMO_SUPPLIER},
     )
 
     print("=" * 80)
